@@ -105,31 +105,29 @@ if option == "Manual Input":
         if name.strip() == "":
             st.warning("Enter patient name")
         else:
-            features = np.array([[jitter, shimmer, ppe]])
-
-            # 🔥 FIX (auto adjust feature size)
-            if features.shape[1] < model.n_features_in_:
-                features = np.pad(features, ((0,0),(0, model.n_features_in_ - features.shape[1])), 'constant')
-
-            prediction = model.predict(features)[0]
-
+            prediction = model.predict([[jitter, shimmer, ppe]])[0]
             result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
-
-            st.success("Prediction Complete")
-            st.write("Result:", result)
 
             fig, ax = plt.subplots(figsize=(2.5,1.2))
             ax.bar(["J","S","P"], [jitter, shimmer, ppe])
-            st.pyplot(fig)
 
-            pdf = create_pdf(name, date, result, fig)
+            # 🔥 SAVE DATA
+            st.session_state["result"] = result
+            st.session_state["fig"] = fig
+            st.session_state["pdf"] = create_pdf(name, date, result, fig)
 
-            st.download_button(
-                "⬇ Download Report",
-                pdf,
-                file_name="report.pdf",
-                mime="application/pdf"
-            )
+# 👉 SHOW OUTSIDE BUTTON (IMPORTANT)
+if "result" in st.session_state:
+    st.success("Prediction Complete")
+    st.write("Result:", st.session_state["result"])
+    st.pyplot(st.session_state["fig"])
+
+    st.download_button(
+        "⬇ Download Report",
+        st.session_state["pdf"],
+        file_name="report.pdf",
+        mime="application/pdf"
+    )
 
 # ---------------- VOICE ----------------
 elif option == "Voice Input":
@@ -150,31 +148,29 @@ elif option == "Voice Input":
         shimmer = np.mean(np.abs(y))
         ppe = np.var(y)
 
-        features = np.array([[jitter, shimmer, ppe]])
-
-        # 🔥 FIX (same here)
-        if features.shape[1] < model.n_features_in_:
-            features = np.pad(features, ((0,0),(0, model.n_features_in_ - features.shape[1])), 'constant')
-
-        prediction = model.predict(features)[0]
-
+        prediction = model.predict([[jitter, shimmer, ppe]])[0]
         result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
-
-        st.success("Voice Analysis Done")
-        st.write("Result:", result)
 
         fig, ax = plt.subplots(figsize=(2.5,1.2))
         ax.plot(y[:1000])
-        st.pyplot(fig)
 
-        pdf = create_pdf(name, date, result, fig)
+        # 🔥 SAVE DATA
+        st.session_state["result_voice"] = result
+        st.session_state["fig_voice"] = fig
+        st.session_state["pdf_voice"] = create_pdf(name, date, result, fig)
 
-        st.download_button(
-            "⬇ Download Voice Report",
-            pdf,
-            file_name="voice_report.pdf",
-            mime="application/pdf"
-        )
+# 👉 SHOW OUTSIDE BUTTON
+if "result_voice" in st.session_state:
+    st.success("Voice Analysis Done")
+    st.write("Result:", st.session_state["result_voice"])
+    st.pyplot(st.session_state["fig_voice"])
+
+    st.download_button(
+        "⬇ Download Voice Report",
+        st.session_state["pdf_voice"],
+        file_name="voice_report.pdf",
+        mime="application/pdf"
+    )
 
 # ---------------- FOOTER ----------------
 st.markdown('<div class="footer">Developed by Nimalrajasegar</div>', unsafe_allow_html=True)
