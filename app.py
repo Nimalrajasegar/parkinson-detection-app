@@ -1,16 +1,11 @@
 import streamlit as st
 import numpy as np
 from datetime import datetime
-import io
 import matplotlib.pyplot as plt
 import sounddevice as sd
 from scipy.io.wavfile import write
 import librosa
 import pickle
-
-# FIXED PDF IMPORT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
-from reportlab.lib.styles import getSampleStyleSheet
 
 # ---------------- LOAD MODEL ----------------
 model = pickle.load(open("model.pkl", "rb"))
@@ -19,15 +14,18 @@ model = pickle.load(open("model.pkl", "rb"))
 st.set_page_config(page_title="Parkinson Detection", layout="centered")
 
 # ---------------- STYLE ----------------
-st.markdown("""<style>
+st.markdown("""
+<style>
 [data-testid="stHeader"] {display: none;}
 .block-container {padding-top: 0rem; margin-top: 0rem;}
+
 .stApp {
     background: linear-gradient(rgba(13,71,161,0.5), rgba(13,71,161,0.5)),
     url("https://images.unsplash.com/photo-1586773860418-d37222d8fce3");
     background-size: cover;
     background-position: center;
 }
+
 .title-box {
     background: white;
     padding: 15px;
@@ -36,43 +34,36 @@ st.markdown("""<style>
     font-weight: bold;
     color: #0d47a1;
 }
+
 .stButton>button, .stDownloadButton>button {
     background-color: #ff5722 !important;
     color: white !important;
     font-weight: bold;
     border-radius: 10px;
 }
-h1,h2,h3,label,p {color: black !important;}
-.footer {text-align: right; font-size: 13px; margin-top: 20px; color: black;}
-</style>""", unsafe_allow_html=True)
 
-# ---------------- SAFE PDF ----------------
-def create_pdf(name, date, result, fig):
-    try:
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer)
-        styles = getSampleStyleSheet()
+h1,h2,h3,label,p {
+    color: black !important;
+}
 
-        content = []
-        content.append(Paragraph("Parkinson Detection Report", styles['Title']))
-        content.append(Spacer(1, 20))
-        content.append(Paragraph(f"Name: {name}", styles['Normal']))
-        content.append(Paragraph(f"Date: {str(date)}", styles['Normal']))
-        content.append(Paragraph(f"Result: {result}", styles['Normal']))
-        content.append(Spacer(1, 20))
+.footer {
+    text-align: right;
+    font-size: 13px;
+    margin-top: 20px;
+    color: black;
+}
+</style>
+""", unsafe_allow_html=True)
 
-        img_buffer = io.BytesIO()
-        fig.savefig(img_buffer, format='png', bbox_inches='tight')
-        img_buffer.seek(0)
+# ---------------- SIMPLE REPORT ----------------
+def create_report(name, date, result):
+    return f"""
+Parkinson Detection Report
 
-        content.append(Image(img_buffer, width=250, height=120))
-
-        doc.build(content)
-        buffer.seek(0)
-        return buffer.getvalue()
-
-    except Exception as e:
-        return None  # prevents crash
+Name: {name}
+Date: {date}
+Result: {result}
+"""
 
 # ---------------- UI ----------------
 st.markdown('<div class="title-box">🧠 Parkinson Detection System</div>', unsafe_allow_html=True)
@@ -97,28 +88,20 @@ if option == "Manual Input":
             prediction = model.predict([[jitter, shimmer, ppe]])[0]
             result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
 
-            fig, ax = plt.subplots(figsize=(2.5,1.2))
-            ax.bar(["J","S","P"], [jitter, shimmer, ppe])
-
             st.session_state["result"] = result
-            st.session_state["fig"] = fig
-            st.session_state["pdf"] = create_pdf(name, date, result, fig)
+            st.session_state["report"] = create_report(name, date, result)
 
 # SHOW RESULT
 if "result" in st.session_state:
     st.success("Prediction Complete")
     st.write("Result:", st.session_state["result"])
-    st.pyplot(st.session_state["fig"])
 
-    if st.session_state["pdf"] is not None:
-        st.download_button(
-            "⬇ Download Report",
-            st.session_state["pdf"],
-            file_name="report.pdf",
-            mime="application/pdf"
-        )
-    else:
-        st.warning("PDF generation failed")
+    st.download_button(
+        "⬇ Download Report",
+        st.session_state["report"],
+        file_name="report.txt",
+        mime="text/plain"
+    )
 
 # ---------------- VOICE ----------------
 elif option == "Voice Input":
@@ -142,27 +125,19 @@ elif option == "Voice Input":
         prediction = model.predict([[jitter, shimmer, ppe]])[0]
         result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
 
-        fig, ax = plt.subplots(figsize=(2.5,1.2))
-        ax.plot(y[:1000])
-
         st.session_state["result_voice"] = result
-        st.session_state["fig_voice"] = fig
-        st.session_state["pdf_voice"] = create_pdf(name, date, result, fig)
+        st.session_state["report_voice"] = create_report(name, date, result)
 
 if "result_voice" in st.session_state:
     st.success("Voice Analysis Done")
     st.write("Result:", st.session_state["result_voice"])
-    st.pyplot(st.session_state["fig_voice"])
 
-    if st.session_state["pdf_voice"] is not None:
-        st.download_button(
-            "⬇ Download Voice Report",
-            st.session_state["pdf_voice"],
-            file_name="voice_report.pdf",
-            mime="application/pdf"
-        )
-    else:
-        st.warning("PDF generation failed")
+    st.download_button(
+        "⬇ Download Voice Report",
+        st.session_state["report_voice"],
+        file_name="voice_report.txt",
+        mime="text/plain"
+    )
 
 # ---------------- FOOTER ----------------
 st.markdown('<div class="footer">Developed by Nimalrajasegar</div>', unsafe_allow_html=True)
