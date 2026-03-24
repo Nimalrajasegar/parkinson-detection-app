@@ -1,22 +1,180 @@
 import streamlit as st
-import pickle
 import numpy as np
+from datetime import datetime
+import io
+import matplotlib.pyplot as plt
+import sounddevice as sd
+from scipy.io.wavfile import write
+import librosa
+import pickle
 
-# Load model
+# PDF
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
+
+# ---------------- LOAD MODEL ----------------
 model = pickle.load(open("model.pkl", "rb"))
 
-st.title("Parkinson's Detection App")
+# ---------------- PAGE ----------------
+st.set_page_config(page_title="Parkinson Detection", layout="centered")
 
-st.write("Enter values to predict")
+# ---------------- STYLE ----------------
+st.markdown("""
+<style>
+[data-testid="stHeader"] {display: none;}
+.block-container {padding-top: 0rem; margin-top: 0rem;}
 
-# Example inputs (you can change later)
-f1 = st.number_input("Feature 1")
-f2 = st.number_input("Feature 2")
+.stApp {
+    background: linear-gradient(rgba(13,71,161,0.5), rgba(13,71,161,0.5)),
+    url("https://images.unsplash.com/photo-1586773860418-d37222d8fce3");
+    background-size: cover;
+    background-position: center;
+}
 
-if st.button("Predict"):
-    result = model.predict([[f1, f2]])
+.title-box {
+    background: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: #0d47a1;
+}
 
-    if result[0] == 1:
-        st.error("Parkinson's Detected")
-    else:
-        st.success("Healthy")
+.stButton>button, .stDownloadButton>button {
+    background-color: #ff5722 !important;
+    color: white !important;
+    font-weight: bold;
+    border-radius: 10px;
+}
+
+h1,h2,h3,label,p {
+    color: black !important;
+}
+
+.footer {
+    text-align: right;
+    font-size: 13px;
+    margin-top: 20px;
+    color: black;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- PDF ----------------
+def create_pdf(name, date, result, fig):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    styles = getSampleStyleSheet()
+
+    content = []
+    content.append(Paragraph("Parkinson Detection Report", styles['Title']))
+    content.append(Spacer(1, 20))
+    content.append(Paragraph(f"Name: {name}", styles['Normal']))
+    content.append(Paragraph(f"Date: {str(date)}", styles['Normal']))
+    content.append(Paragraph(f"Result: {result}", styles['Normal']))
+    content.append(Spacer(1, 20))
+
+    img_buffer = io.BytesIO()
+    fig.savefig(img_buffer, format='png', bbox_inches='tight')
+    img_buffer.seek(0)
+
+    content.append(Image(img_buffer, width=250, height=120))
+
+    doc.build(content)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# ---------------- UI ----------------
+
+st.markdown('<div class="title-box">🧠 Parkinson Detection System</div>', unsafe_allow_html=True)
+
+name = st.text_input("Patient Name")
+date = st.date_input("Date", datetime.today())
+
+option = st.radio("Choose Input Method", ["Manual Input", "Voice Input"])
+
+# ---------------- MANUAL ----------------
+if option == "Manual Input":
+
+    jitter = st.number_input("Jitter", 0.0, 0.05, 0.005)
+    shimmer = st.number_input("Shimmer", 0.0, 0.1, 0.03)
+    ppe = st.number_input("PPE", 0.0, 0.5, 0.1)
+
+    if st.button("🔍 Predict"):
+
+        if name.strip() == "":
+            st.warning("Enter patient name")
+        else:
+            features = np.array([[jitter, shimmer, ppe]])
+
+            # 🔥 FIX (auto adjust feature size)
+            if features.shape[1] < model.n_features_in_:
+                features = np.pad(features, ((0,0),(0, model.n_features_in_ - features.shape[1])), 'constant')
+
+            prediction = model.predict(features)[0]
+
+            result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
+
+            st.success("Prediction Complete")
+            st.write("Result:", result)
+
+            fig, ax = plt.subplots(figsize=(2.5,1.2))
+            ax.bar(["J","S","P"], [jitter, shimmer, ppe])
+            st.pyplot(fig)
+
+            pdf = create_pdf(name, date, result, fig)
+
+            st.download_button(
+                "⬇ Download Report",
+                pdf,
+                file_name="report.pdf",
+                mime="application/pdf"
+            )
+
+# ---------------- VOICE ----------------
+elif option == "Voice Input":
+
+    st.write("🎤 Click to record 5 seconds")
+
+    if st.button("🎙 Record"):
+
+        fs = 44100
+        audio = sd.rec(int(5 * fs), samplerate=fs, channels=1)
+        sd.wait()
+
+        write("voice.wav", fs, audio)
+
+        y, sr = librosa.load("voice.wav")
+
+        jitter = np.std(y)
+        shimmer = np.mean(np.abs(y))
+        ppe = np.var(y)
+
+        features = np.array([[jitter, shimmer, ppe]])
+
+        # 🔥 FIX (same here)
+        if features.shape[1] < model.n_features_in_:
+            features = np.pad(features, ((0,0),(0, model.n_features_in_ - features.shape[1])), 'constant')
+
+        prediction = model.predict(features)[0]
+
+        result = "No Parkinson" if prediction == 0 else "Parkinson Detected"
+
+        st.success("Voice Analysis Done")
+        st.write("Result:", result)
+
+        fig, ax = plt.subplots(figsize=(2.5,1.2))
+        ax.plot(y[:1000])
+        st.pyplot(fig)
+
+        pdf = create_pdf(name, date, result, fig)
+
+        st.download_button(
+            "⬇ Download Voice Report",
+            pdf,
+            file_name="voice_report.pdf",
+            mime="application/pdf"
+        )
+
+# ---------------- FOOTER ----------------
+st.markdown('<div class="footer">Developed by Nimalrajasegar</div>', unsafe_allow_html=True)
