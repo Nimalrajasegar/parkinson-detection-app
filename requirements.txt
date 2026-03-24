@@ -4,3 +4,7 @@ numpy
 scikit-learn
 librosa
 xgboost
+matplotlib
+sounddevice
+scipy
+reportlab==3.6.12
