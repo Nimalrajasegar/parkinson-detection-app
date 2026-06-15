@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neural Degradation Screening</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">ND</span>
+        <div>
+          <strong>ND Screening</strong>
+          <small>Clinical support UI</small>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <a class="active" href="#assessment">Assessment</a>
+        <a href="#results">Results</a>
+        <a href="#reference">Reference</a>
+      </nav>
+
+      <div class="sidebar-stats">
+        <div>
+          <span>Model inputs</span>
+          <strong>3</strong>
+        </div>
+        <div>
+          <span>Dataset rows</span>
+          <strong>195</strong>
+        </div>
+        <div>
+          <span>Report mode</span>
+          <strong>Print</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Standalone screening website</p>
+          <h1>Neural Degradation Screening</h1>
+          <p class="lead">
+            Capture voice-derived measurements, review risk indicators, and prepare a
+            structured screening summary without running a local server.
+          </p>
+        </div>
+        <span class="status-pill"><span></span> Browser ready</span>
+      </header>
+
+      <section class="workspace" id="assessment">
+        <article class="panel setup-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Assessment setup</h2>
+              <p>
+                This standalone site uses browser-side screening logic. Exact trained
+                model predictions still require the Python backend.
+              </p>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div>
+              <span>Reference records</span>
+              <strong>195</strong>
+            </div>
+            <div>
+              <span>Positive class share</span>
+              <strong>75.4%</strong>
+            </div>
+            <div>
+              <span>Median NDI</span>
+              <strong>0.0739</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel responsible-panel">
+          <h2>Responsible use</h2>
+          <p>
+            This is screening support only. It must not replace clinical diagnosis,
+            medication decisions, or emergency assessment.
+          </p>
+        </article>
+      </section>
+
+      <section class="form-grid">
+        <form class="panel" id="patient-form">
+          <h2>Patient details</h2>
+          <div class="field-grid">
+            <label>
+              Patient name
+              <input id="patient-name" type="text" placeholder="Enter patient name" />
+            </label>
+            <label>
+              Screening date
+              <input id="screening-date" type="date" />
+            </label>
+          </div>
+        </form>
+
+        <section class="panel mode-panel">
+          <div class="tabs" role="tablist" aria-label="Input method">
+            <button class="tab active" id="manual-tab" type="button">Manual input</button>
+            <button class="tab" id="voice-tab" type="button">Voice capture</button>
+          </div>
+
+          <form class="input-mode active" id="manual-mode">
+            <h2>Manual feature entry</h2>
+            <p class="muted">Enter the three features used by the original trained model.</p>
+            <div class="feature-grid">
+              <label>
+                Jitter (%)
+                <input id="jitter" type="number" min="0" max="0.1" step="0.00001" value="0.00600" />
+              </label>
+              <label>
+                Shimmer
+                <input id="shimmer" type="number" min="0" max="0.2" step="0.00001" value="0.03000" />
+              </label>
+              <label>
+                PPE
+                <input id="ppe" type="number" min="0" max="0.6" step="0.00001" value="0.12000" />
+              </label>
+            </div>
+            <button class="primary-action" type="submit">Run screening</button>
+          </form>
+
+          <form class="input-mode" id="voice-mode">
+            <h2>Voice capture</h2>
+            <p class="muted">
+              Records audio in the browser and estimates approximate features from the waveform.
+            </p>
+            <label>
+              Recording duration
+              <select id="duration">
+                <option value="3">3 seconds</option>
+                <option value="5" selected>5 seconds</option>
+                <option value="8">8 seconds</option>
+              </select>
+            </label>
+            <button class="primary-action" type="submit">Record and analyze</button>
+            <p class="microcopy" id="recording-status"></p>
+          </form>
+        </section>
+      </section>
+
+      <section class="results" id="results">
+        <div class="metric-grid">
+          <article class="metric-card" id="result-card">
+            <span>Screening result</span>
+            <strong id="result-text">Awaiting input</strong>
+          </article>
+          <article class="metric-card" id="risk-card">
+            <span>Risk level</span>
+            <strong id="risk-text">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>Confidence index</span>
+            <strong id="confidence-text">-</strong>
+          </article>
+          <article class="metric-card">
+            <span>NDI score</span>
+            <strong id="ndi-text">-</strong>
+          </article>
+        </div>
+
+        <article class="panel result-summary">
+          <div>
+            <h2>Review notes</h2>
+            <p id="notes-text">
+              Run an assessment to generate a screening summary and feature comparison.
+            </p>
+          </div>
+          <button class="secondary-action" id="print-report" type="button">Print report</button>
+        </article>
+
+        <section class="chart-grid">
+          <article class="panel chart-panel">
+            <h2>Feature comparison</h2>
+            <canvas id="feature-chart" width="900" height="360" aria-label="Feature comparison chart"></canvas>
+          </article>
+          <article class="panel chart-panel">
+            <h2>Voice waveform</h2>
+            <canvas id="wave-chart" width="900" height="360" aria-label="Voice waveform chart"></canvas>
+          </article>
+        </section>
+      </section>
+
+      <section class="panel reference" id="reference">
+        <h2>Reference values</h2>
+        <div class="reference-table" role="table" aria-label="Reference medians">
+          <div role="row">
+            <span role="columnheader">Feature</span>
+            <span role="columnheader">Dataset median</span>
+            <span role="columnheader">Use</span>
+          </div>
+          <div role="row">
+            <span role="cell">Jitter (%)</span>
+            <span role="cell">0.00494</span>
+            <span role="cell">Frequency instability</span>
+          </div>
+          <div role="row">
+            <span role="cell">Shimmer</span>
+            <span role="cell">0.02297</span>
+            <span role="cell">Amplitude instability</span>
+          </div>
+          <div role="row">
+            <span role="cell">PPE</span>
+            <span role="cell">0.19405</span>
+            <span role="cell">Pitch variation signal</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

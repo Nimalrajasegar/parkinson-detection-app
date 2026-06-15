@@ -1,0 +1,10 @@
+Category,Item,Description,Owner
+What Went Well,Model Training,"Successfully trained an XGBoost model with data scaling (StandardScaler) using the core voice features (Jitter, Shimmer, PPE).",Data Science Team
+What Went Well,Frontend Implementation,"Built a responsive and interactive web interface using Streamlit, facilitating both manual and voice inputs.",Frontend Developer
+What Went Well,Medical Reporting,"Implemented automated PDF report generation using reportlab, including risk level and plotting data.",Backend Developer
+What Could Be Improved,Voice Recording in Web,Current use of 'sounddevice' for audio recording might not work in cloud/web deployments. It expects local audio hardware.,Architecture Team
+What Could Be Improved,Feature Engineering,Currently relying on only 3 features. We have more features in data.csv that could improve model robustness.,Data Science Team
+What Could Be Improved,UI/UX Polish,The web application looks okay but can be improved beyond basic Streamlit theming.,Frontend Developer
+Action Item,Refactor Audio Input,Investigate Streamlit-native web audio recorder components (like streamlit-webrtc or audio-recorder-streamlit) to replace sounddevice.,Architecture Team
+Action Item,Model Evaluation,Conduct a new model training experiment incorporating more features from data.csv.,Data Science Team
+Action Item,Error Handling,"Add robust try-except blocks, especially around audio processing and librosa feature extraction.",Backend Developer
