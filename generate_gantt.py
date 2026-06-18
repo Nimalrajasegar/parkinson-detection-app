@@ -4,7 +4,6 @@ import matplotlib.patches as mpatches
 import pandas as pd
 from datetime import datetime
 
-# Define realistic project timeline logic in days
 tasks = [
     {"Task": "Require & Design (FSD)", "Start": "2024-04-01", "Duration": 3, "Color": "#1f77b4"},
     {"Task": "Data Prep & ML Model", "Start": "2024-04-03", "Duration": 5, "Color": "#ff7f0e"},
@@ -15,33 +14,28 @@ tasks = [
     {"Task": "Deployment", "Start": "2024-04-14", "Duration": 2, "Color": "#e377c2"}
 ]
 
-# Process data
 df = pd.DataFrame(tasks)
 df['Start'] = pd.to_datetime(df['Start'])
 df['End'] = df['Start'] + pd.to_timedelta(df['Duration'], unit='D')
 
-# Set up the plot
 fig, ax = plt.subplots(figsize=(10, 6))
 
-# Plot bars
+
 for i, task in enumerate(reversed(df.to_dict('records'))):
     start = task['Start']
     duration = task['Duration']
     ax.barh(task['Task'], duration, left=start, color=task['Color'], height=0.5, align='center', edgecolor='black')
 
-# Format x-axis to show dates nicely
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
 ax.xaxis.set_major_locator(mdates.DayLocator(interval=2))
 
 plt.title("Parkinson Detection Project - Work Plan & Timeline", fontsize=16, fontweight='bold', pad=20)
 plt.xlabel("Project Timeline (April 2024)", fontsize=12, labelpad=10)
 
-# Add grid lines for readability
 plt.grid(axis='x', linestyle='--', alpha=0.6)
 
-# Improve margins
+
 plt.tight_layout()
 
-# Save as PNG
 plt.savefig("work_plan.png", dpi=300, facecolor='white', bbox_inches='tight')
 print("Successfully generated work_plan.png")
